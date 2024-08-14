@@ -177,6 +177,10 @@ class CurlMulti extends AbstractHasDispatcher implements CurlMultiInterface
     private function addHandle(RequestInterface $request)
     {
         $handle = $this->createCurlHandle($request)->getHandle();
+        if (!($handle instanceof \CurlHandle)) {
+            throw new \RuntimeException('CurlHandle::factory must return an instance of CurlHandle');
+        }
+
         $this->checkCurlResult(
             curl_multi_add_handle($this->multiHandle, $handle)
         );
@@ -356,8 +360,12 @@ class CurlMulti extends AbstractHasDispatcher implements CurlMultiInterface
         }
 
         $handle->setErrorNo($curl['result']);
-        $e = new CurlException(sprintf('[curl] %s: %s [url] %s',
-            $handle->getErrorNo(), $handle->getError(), $handle->getUrl()));
+        $e = new CurlException(sprintf(
+            '[curl] %s: %s [url] %s',
+            $handle->getErrorNo(),
+            $handle->getError(),
+            $handle->getUrl()
+        ));
         $e->setCurlHandle($handle)
             ->setRequest($request)
             ->setCurlInfo($handle->getInfo())
@@ -375,9 +383,10 @@ class CurlMulti extends AbstractHasDispatcher implements CurlMultiInterface
     private function checkCurlResult($code)
     {
         if ($code != CURLM_OK && $code != CURLM_CALL_MULTI_PERFORM) {
-            throw new CurlException(isset($this->multiErrors[$code])
-                ? "cURL error: {$code} ({$this->multiErrors[$code][0]}): cURL message: {$this->multiErrors[$code][1]}"
-                : 'Unexpected cURL error: ' . $code
+            throw new CurlException(
+                isset($this->multiErrors[$code])
+                    ? "cURL error: {$code} ({$this->multiErrors[$code][0]}): cURL message: {$this->multiErrors[$code][1]}"
+                    : 'Unexpected cURL error: ' . $code
             );
         }
     }
@@ -398,7 +407,7 @@ class CurlMulti extends AbstractHasDispatcher implements CurlMultiInterface
         if (!$body) {
             $rex = new RequestException(
                 'No response was received for a request with no body. This'
-                . ' could mean that you are saturating your network.'
+                    . ' could mean that you are saturating your network.'
             );
             $rex->setRequest($request);
             $this->removeErroredRequest($request, $rex);
@@ -406,8 +415,8 @@ class CurlMulti extends AbstractHasDispatcher implements CurlMultiInterface
             // Nothing we can do with this. Sorry!
             $rex = new RequestException(
                 'The connection was unexpectedly closed. The request would'
-                . ' have been retried, but attempting to rewind the'
-                . ' request body failed.'
+                    . ' have been retried, but attempting to rewind the'
+                    . ' request body failed.'
             );
             $rex->setRequest($request);
             $this->removeErroredRequest($request, $rex);
