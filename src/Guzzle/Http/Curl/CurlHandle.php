@@ -22,7 +22,7 @@ class CurlHandle
     /** @var Collection Curl options */
     protected $options;
 
-    /** @var resource Curl resource handle */
+    /** @var resource|\CurlHandle Curl resource handle */
     protected $handle;
 
     /** @var int CURLE_* error */
@@ -50,7 +50,7 @@ class CurlHandle
 
         // Prepare url
         $url = (string)$request->getUrl();
-        if(($pos = strpos($url, '#')) !== false ){
+        if (($pos = strpos($url, '#')) !== false) {
             // strip fragment from url
             $url = substr($url, 0, $pos);
         }
@@ -135,7 +135,6 @@ class CurlHandle
                     // Attempt to seek to the start of the stream
                     $request->getBody()->seek(0);
                 }
-
             } else {
 
                 // Special handling for POST specific fields and files
@@ -226,16 +225,17 @@ class CurlHandle
     /**
      * Construct a new CurlHandle object that wraps a cURL handle
      *
-     * @param resource         $handle  Configured cURL handle resource
+     * @param resource|\CurlHandle $handle Configured cURL handle resource
      * @param Collection|array $options Curl options to use with the handle
      *
      * @throws InvalidArgumentException
      */
     public function __construct($handle, $options)
     {
-        if (!is_resource($handle)) {
+        if (!is_resource($handle) || (!$handle instanceof \CurlHandle)) {
             throw new InvalidArgumentException('Invalid handle provided');
         }
+
         if (is_array($options)) {
             $this->options = new Collection($options);
         } elseif ($options instanceof Collection) {
@@ -259,7 +259,7 @@ class CurlHandle
      */
     public function close()
     {
-        if (is_resource($this->handle)) {
+        if (is_resource($this->handle) || $this->handle instanceof \CurlHandle) {
             curl_close($this->handle);
         }
         $this->handle = null;
@@ -322,7 +322,7 @@ class CurlHandle
      */
     public function getInfo($option = null)
     {
-        if (!is_resource($this->handle)) {
+        if (!is_resource($this->handle) && !$this->handle instanceof \CurlHandle) {
             return null;
         }
 
